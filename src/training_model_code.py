@@ -22,10 +22,8 @@ def get_img_height() -> int:
     return 32
 
 
-def get_img_size(line_mode: bool = False) -> Tuple[int, int]:
-    """Height is fixed for NN, width is set according to training mode (single words or text lines)."""
-    if line_mode:
-        return 256, get_img_height()
+def get_img_size() -> Tuple[int, int]:
+    """Height is fixed for NN, width is set according to training mode (single words)."""
     return 128, get_img_height()
 
 
@@ -35,23 +33,20 @@ def write_summary(char_error_rates: List[float], word_accuracies: List[float]) -
         json.dump({'charErrorRates': char_error_rates, 'wordAccuracies': word_accuracies}, f)
 
 
-
 def train(model: Model,
           loader: DataLoaderIAM,
-          line_mode: bool,
           early_stopping: int = 25) -> None:
     """Trains NN."""
     epoch = 0  # number of training epochs since start
     summary_char_error_rates = []
     summary_word_accuracies = []
-    preprocessor = Preprocessor(get_img_size(line_mode), data_augmentation=True, line_mode=line_mode)
     best_char_error_rate = float('inf')  # best validation character error rate
     no_improvement_since = 0  # number of epochs no improvement of character error rate occurred
     # stop training after this number of epochs without improvement
     while True:
         epoch += 1
         print('Epoch:', epoch)
-
+        preprocessor = Preprocessor(get_img_size())
         # train
         print('Train NN')
         loader.train_set()
@@ -63,7 +58,7 @@ def train(model: Model,
             print(f'Epoch: {epoch} Batch: {iter_info[0]}/{iter_info[1]} Loss: {loss}')
 
         # validate
-        char_error_rate, word_accuracy = validate(model, loader, line_mode)
+        char_error_rate, word_accuracy = validate(model, loader)
 
         # write summary
         summary_char_error_rates.append(char_error_rate)
@@ -86,11 +81,11 @@ def train(model: Model,
             break
 
 
-def validate(model: Model, loader: DataLoaderIAM, line_mode: bool) -> Tuple[float, float]:
+def validate(model: Model, loader: DataLoaderIAM) -> Tuple[float, float]:
     """Validates NN."""
     print('Validate NN')
     loader.validation_set()
-    preprocessor = Preprocessor(get_img_size(line_mode), line_mode=line_mode)
+    preprocessor = Preprocessor(get_img_size())
     num_char_err = 0
     num_char_total = 0
     num_word_ok = 0
@@ -147,10 +142,7 @@ def main():
     
     loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
 
-    # when in line mode, take care to have a whitespace in the char list
     char_list = loader.char_list
-    if args.line_mode and ' ' not in char_list:
-        char_list = [' '] + char_list
 
     # save characters and words
     with open(FilePaths.fn_char_list, 'w') as f:
@@ -160,4 +152,7 @@ def main():
         f.write(' '.join(loader.train_words + loader.validation_words))
 
     model = Model(char_list, decoder_type)
-    train(model, loader, line_mode=args.line_mode, early_stopping=args.early_stopping)
+    train(model, loader, early_stopping=args.early_stopping)
+
+if __name__ == '__main__':
+    main()
