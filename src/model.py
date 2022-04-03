@@ -205,9 +205,9 @@ class Model:
         """Feed a batch into the NN to train it."""
         num_batch_elements = len(batch.imgs)
         max_text_len = batch.imgs[0].shape[0] // 4
-        sparse = self.to_sparse(batch.gt_texts)
+        sparse = self.to_sparse(batch.ground_truth_texts)
         eval_list = [self.optimizer, self.loss]
-        feed_dict = {self.input_imgs: batch.imgs, self.gt_texts: sparse,
+        feed_dict = {self.input_imgs: batch.imgs, self.ground_truth_texts: sparse,
                      self.seq_len: [max_text_len] * num_batch_elements, self.is_train: True}
         _, loss_val = self.sess.run(eval_list, feed_dict)
         self.batches_trained += 1
@@ -265,10 +265,10 @@ class Model:
         # feed RNN output and recognized text into CTC loss to compute labeling probability
         probs = None
         if calc_probability:
-            sparse = self.to_sparse(batch.gt_texts) if probability_of_gt else self.to_sparse(texts)
+            sparse = self.to_sparse(batch.ground_truth_texts) if probability_of_gt else self.to_sparse(texts)
             ctc_input = eval_res[1]
             eval_list = self.loss_per_element
-            feed_dict = {self.saved_ctc_input: ctc_input, self.gt_texts: sparse,
+            feed_dict = {self.saved_ctc_input: ctc_input, self.ground_truth_texts: sparse,
                          self.seq_len: [max_text_len] * num_batch_elements, self.is_train: False}
             loss_vals = self.sess.run(eval_list, feed_dict)
             probs = np.exp(-loss_vals)
