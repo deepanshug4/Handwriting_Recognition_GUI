@@ -39,7 +39,7 @@ The effectiveness of the use of CTC for handwritten text recognition has been pr
 - Zero dependencies
 - Recognition of handwritten text on words
 - Recognition of handwritten text on lines (upcoming)
-- Use of CTC algorithms to improve the quality of recognition without using <a href="https://github.com/githubharald/DeslantImg">De-slanting algorithms</a>
+- Use of CTC algorithms to improve the quality of recognition without using <a href="https://github.com/githubharald/DeslantImg">De-slanting</a> algorithms
 - Implementation of different CTC decoders like 1) Best Fit 2) Beam Search 3) Word Search (upcoming)   
 - [Request more features](#feature-request)...
 
