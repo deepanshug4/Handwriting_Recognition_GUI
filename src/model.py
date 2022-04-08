@@ -112,21 +112,21 @@ class Model:
 
         self.ctc_in_3d_tbc = tf.transpose(a=self.rnn_out_3d, perm=[1, 0, 2])
         # ground truth text as sparse tensor
-        self.ground_truth_texts = tf.SparseTensor(tf.compat.v1.placeholder(tf.int64, shape=[None, 2]),
+        self.gt_texts = tf.SparseTensor(tf.compat.v1.placeholder(tf.int64, shape=[None, 2]),
                                         tf.compat.v1.placeholder(tf.int32, [None]),
                                         tf.compat.v1.placeholder(tf.int64, [2]))
 
         # calc loss for batch
         self.seq_len = tf.compat.v1.placeholder(tf.int32, [None])
         self.loss = tf.reduce_mean(
-            input_tensor=tf.compat.v1.nn.ctc_loss(labels=self.ground_truth_texts, inputs=self.ctc_in_3d_tbc,
+            input_tensor=tf.compat.v1.nn.ctc_loss(labels=self.gt_texts, inputs=self.ctc_in_3d_tbc,
                                                   sequence_length=self.seq_len,
                                                   ctc_merge_repeated=True))
 
         # calc loss for each element to compute label probability used by decoders
         self.saved_ctc_input = tf.compat.v1.placeholder(tf.float32,
                                                         shape=[None, None, len(self.char_list) + 1])
-        self.loss_per_element = tf.compat.v1.nn.ctc_loss(labels=self.ground_truth_texts, inputs=self.saved_ctc_input,
+        self.loss_per_element = tf.compat.v1.nn.ctc_loss(labels=self.gt_texts, inputs=self.saved_ctc_input,
                                                          sequence_length=self.seq_len, ctc_merge_repeated=True)
 
         # best path decoding or beam search decoding
@@ -212,9 +212,9 @@ class Model:
         """Feed a batch into the NN to train it."""
         num_batch_elements = len(batch.imgs)
         max_text_len = batch.imgs[0].shape[0] // 4
-        sparse = self.to_sparse(batch.ground_truth_texts)
+        sparse = self.to_sparse(batch.gt_texts)
         eval_list = [self.optimizer, self.loss]
-        feed_dict = {self.input_imgs: batch.imgs, self.ground_truth_texts: sparse,
+        feed_dict = {self.input_imgs: batch.imgs, self.gt_texts: sparse,
                      self.seq_len: [max_text_len] * num_batch_elements, self.is_train: True}
         _, loss_val = self.sess.run(eval_list, feed_dict)
         self.batches_trained += 1
@@ -252,10 +252,10 @@ class Model:
         # feed RNN output and recognized text into CTC loss to compute labeling probability
         probs = None
         if calc_probability:
-            sparse = self.to_sparse(batch.ground_truth_texts) if probability_of_gt else self.to_sparse(texts)
+            sparse = self.to_sparse(batch.gt_texts) if probability_of_gt else self.to_sparse(texts)
             ctc_input = eval_res[1]
             eval_list = self.loss_per_element
-            feed_dict = {self.saved_ctc_input: ctc_input, self.ground_truth_texts: sparse,
+            feed_dict = {self.saved_ctc_input: ctc_input, self.gt_texts: sparse,
                          self.seq_len: [max_text_len] * num_batch_elements, self.is_train: False}
             loss_vals = self.sess.run(eval_list, feed_dict)
             probs = np.exp(-loss_vals)
