@@ -168,12 +168,12 @@ class Model:
 
         return sess, saver
 
+    
     def to_sparse(self, texts: List[str]) -> Tuple[List[List[int]], List[int], List[int]]:
         """Getting the ground truth texts into the sparse tensor for ctc_loss."""
         indices = []
         values = []
         shape = [len(texts), 0]  # last entry must be max(labelList[i])
-
         # go over all texts
         for batchElement, text in enumerate(texts):
             # convert to string of label (i.e. class-ids)
@@ -261,7 +261,7 @@ class Model:
             probs = np.exp(-loss_vals)
 
         return texts, probs
-    
+
     #To save the model
     def save(self, type_of_model) -> None:
         """Save model to file."""
