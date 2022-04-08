@@ -24,7 +24,7 @@ class Model:
     """Minimalistic Tensorflow model for Handwritten Text Recognition."""
 
     def __init__(self,
-                 type_of_model, #This specifies the model that is being used. 0 for word, 1 for line
+                 type_of_model,
                  char_list: List[str],
                  decoder_type: str = DecoderType.BestPath,
                  must_restore: bool = False,
@@ -261,3 +261,12 @@ class Model:
             probs = np.exp(-loss_vals)
 
         return texts, probs
+    
+    #To save the model
+    def save(self, type_of_model) -> None:
+        """Save model to file."""
+        self.snap_ID += 1
+        if type_of_model: #To make different folders for different models.
+            self.saver.save(self.sess, '../model/line/snapshot', global_step=self.snap_ID)
+        else:
+            self.saver.save(self.sess, '../model/word/snapshot', global_step=self.snap_ID)
