@@ -36,9 +36,14 @@ def write_summary(char_error_rates: List[float], word_accuracies: List[float]) -
         json.dump({'charErrorRates': char_error_rates, 'wordAccuracies': word_accuracies}, f)
 
 
+def char_list_from_file() -> List[str]:
+    with open(FilePaths.fn_char_list) as f:
+        return list(f.read())
+
+
 def train(model: Model,
           loader: DataLoaderIAM,
-          type_of_model,
+          model_type,
           early_stopping: int = 25):
     """Trains NN."""
     epoch = 0  # number of training epochs since start
@@ -50,7 +55,7 @@ def train(model: Model,
     while True:
         epoch += 1
         print('Epoch:', epoch)
-        preprocessor = Preprocessor(get_img_size(type_of_model), data_augmentation=True, model_mode = type_of_model)
+        preprocessor = Preprocessor(get_img_size(model_type), data_augmentation=True, model_mode = model_type)
         # train
         print('Train NN')
         loader.train_set()
@@ -62,7 +67,7 @@ def train(model: Model,
             print(f'Epoch: {epoch} Batch: {iter_info[0]}/{iter_info[1]} Loss: {loss}')
 
         # validate
-        char_error_rate, word_accuracy = validate(model, loader, type_of_model)
+        char_error_rate, word_accuracy = validate(model, loader, model_type=model_type)
 
         # write summary
         summary_char_error_rates.append(char_error_rate)
@@ -74,7 +79,7 @@ def train(model: Model,
             print('Character error rate improved, save model')
             best_char_error_rate = char_error_rate
             no_improvement_since = 0
-            model.save()
+            model.save(model_type) #to save the model
         else:
             print(f'Character error rate not improved, best so far: {char_error_rate * 100.0}%')
             no_improvement_since += 1
@@ -85,11 +90,11 @@ def train(model: Model,
             break
 
 
-def validate(model: Model, loader: DataLoaderIAM, type_of_model) -> Tuple[float, float]:
+def validate(model: Model, loader: DataLoaderIAM, model_type) -> Tuple[float, float]:
     """Validates NN."""
     print('Validate NN')
     loader.validation_set()
-    preprocessor = Preprocessor(get_img_size(type_of_model), model_mode = type_of_model)
+    preprocessor = Preprocessor(get_img_size(model_type), model_mode = model_type)
     num_char_err = 0
     num_char_total = 0
     num_word_ok = 0
@@ -99,7 +104,7 @@ def validate(model: Model, loader: DataLoaderIAM, type_of_model) -> Tuple[float,
         print(f'Batch: {iter_info[0]} / {iter_info[1]}')
         batch = loader.get_next()
         batch = preprocessor.process_batch(batch)
-        recognized, _ = model.infer_batch(batch)
+        recognized, _ = model.infer_batch(batch) # to get the output of the test images 
 
         print('Ground truth -> Recognized')
         for i in range(len(recognized)):
@@ -122,6 +127,7 @@ def parse_args() -> argparse.Namespace:
     """Parses arguments from the command line. Used for adding different modifications to the training model."""
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--mode', choices=['train', 'validate'], default='train')
     parser.add_argument('--decoder', choices=['bestpath', 'beamsearch'], default='beamsearch')
     parser.add_argument('--batch_size', help='Batch size.', type=int, default=100)
     parser.add_argument('--data_dir', help='Directory containing IAM dataset.', type=Path, required=False)
@@ -150,23 +156,30 @@ def main():
     # set model type
     type_of_model = model_type[args.type_of_model]
 
-    # train the model
-    loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
-    char_list = loader.char_list
+    if args.mode == 'train':
+        # train the model
+        loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
+        char_list = loader.char_list
 
-    #If line mode
-    if args.type_of_model == 1 and ' ' not in char_list: # ' ' needed for space in words
-        char_list = [' '] + char_list
+        #If line mode
+        if args.type_of_model == 1 and ' ' not in char_list: # ' ' needed for space in words
+            char_list = [' '] + char_list
 
-    # save characters and words
-    with open(FilePaths.fn_char_list, 'w') as f:
-        f.write(''.join(char_list))
+        # save characters and words
+        with open(FilePaths.fn_char_list, 'w') as f:
+            f.write(''.join(char_list))
 
-    with open(FilePaths.fn_corpus, 'w') as f:
-        f.write(' '.join(loader.train_words + loader.validation_words))
+        with open(FilePaths.fn_corpus, 'w') as f:
+            f.write(' '.join(loader.train_words + loader.validation_words))
 
-    model = Model(char_list, decoder_type, type_of_model = args.type_of_model) 
-    train(model, loader, early_stopping=args.early_stopping, type_of_model = args.type_of_model)
+        model = Model(char_list, decoder_type, type_of_model = type_of_model) 
+        train(model, loader, early_stopping=args.early_stopping, type_of_model = args.type_of_model)
+    
+    elif args.mode == 'validate':
+        loader = DataLoaderIAM(args.data_dir, args.batch_size, fast=args.fast)
+        model = Model(char_list_from_file(), decoder_type, must_restore=True)
+        validate(model, loader, model_type = type_of_model)
+
 
 if __name__ == '__main__':
     main()
