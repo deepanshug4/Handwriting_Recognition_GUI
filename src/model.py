@@ -24,7 +24,7 @@ class Model:
     """Minimalistic Tensorflow model for Handwritten Text Recognition."""
 
     def __init__(self,
-                 type_of_model,
+                 type_of_model, #This specifies the model that is being used. 0 for word, 1 for line
                  char_list: List[str],
                  decoder_type: str = DecoderType.BestPath,
                  must_restore: bool = False,
