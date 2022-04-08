@@ -1,3 +1,4 @@
+from logging import raiseExceptions
 import os
 import sys
 from typing import List, Tuple
@@ -11,8 +12,7 @@ from dataloader_iam import Batch
 tf.compat.v1.disable_eager_execution()
 
 # Connectionist Temporal Classification (CTC) used as the loss function and decoder.
-# Structure used: CNN -> RNN -> CTC. presented in the thesis by Harald Scheidl
-# https://repositum.tuwien.at/retrieve/10807 --> Thesis
+# Structure used: CNN -> RNN -> CTC. presented in the paper by Deepanshu Gupta.
  
 class DecoderType:
     """CTC decoder types."""
@@ -24,10 +24,11 @@ class Model:
     """Minimalistic Tensorflow model for Handwritten Text Recognition."""
 
     def __init__(self,
+                 type_of_model,
                  char_list: List[str],
                  decoder_type: str = DecoderType.BestPath,
                  must_restore: bool = False,
-                 dump: bool = False) -> None:
+                 dump: bool = False):
         """
         The structure used for the model is using 5 layers of CNN followed by 2 layers of RNN and a CTC function
         Init model: add CNN, RNN and CTC and initialize Tensorflow."""
@@ -55,7 +56,7 @@ class Model:
             self.optimizer = tf.compat.v1.train.AdamOptimizer().minimize(self.loss)
 
         # initialize TF
-        self.sess, self.saver = self.setup_tf()
+        self.sess, self.saver = self.setup_tf(type_of_model)
 
     def setup_cnn(self) -> None:
         """Create CNN layers. ReLU activation function."""
@@ -136,7 +137,7 @@ class Model:
                                                          beam_width=50)
         
 
-    def setup_tf(self) -> Tuple[tf.compat.v1.Session, tf.compat.v1.train.Saver]:
+    def setup_tf(self, type_of_model) -> Tuple[tf.compat.v1.Session, tf.compat.v1.train.Saver]:
         """Initialize Tensorflow."""
         print('Python: ' + sys.version)
         print('Tensorflow: ' + tf.__version__)
@@ -144,7 +145,13 @@ class Model:
         sess = tf.compat.v1.Session()  # TF session
 
         saver = tf.compat.v1.train.Saver(max_to_keep=1)  # saver saves model to file
-        model_dir = '../model/'
+        if type_of_model == 0:
+            model_dir = '../model/word/'
+        elif type_of_model == 1:
+            model_dir = '../model/line/'
+        else:
+            raise Exception("wrong model choice.")
+        
         latest_snapshot = tf.train.latest_checkpoint(model_dir)  # to check for an existing model.
 
         # if model must be restored, there must be a snapshot/existing file
@@ -213,26 +220,6 @@ class Model:
         self.batches_trained += 1
         return loss_val
 
-    @staticmethod
-    def dump_nn_output(rnn_output: np.ndarray) -> None:
-        """Dump the output of the NN to CSV file(s)."""
-        dump_dir = '../dump/'
-        if not os.path.isdir(dump_dir):
-            os.mkdir(dump_dir)
-
-        # iterate over all batch elements and create a CSV file for each one
-        max_t, max_b, max_c = rnn_output.shape
-        for b in range(max_b):
-            csv = ''
-            for t in range(max_t):
-                for c in range(max_c):
-                    csv += str(rnn_output[t, b, c]) + ';'
-                csv += '\n'
-            fn = dump_dir + 'rnnOutput_' + str(b) + '.csv'
-            print('Write dump of NN to file: ' + fn)
-            with open(fn, 'w') as f:
-                f.write(csv)
-
     def infer_batch(self, batch: Batch, calc_probability: bool = False, probability_of_gt: bool = False):
         """Feed a batch into the NN to recognize the texts."""
 
@@ -273,13 +260,4 @@ class Model:
             loss_vals = self.sess.run(eval_list, feed_dict)
             probs = np.exp(-loss_vals)
 
-        # dump the output of the NN to CSV file(s)
-        if self.dump:
-            self.dump_nn_output(eval_res[1])
-
         return texts, probs
-
-    def save(self) -> None:
-        """Save model to file."""
-        self.snap_ID += 1
-        self.saver.save(self.sess, '../model/snapshot', global_step=self.snap_ID)
