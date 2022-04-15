@@ -17,7 +17,7 @@ The use of CTC makes the model more receptive to differnt writing styles like it
 
 ## QUICK DEMO
 ---
-### Counting of Different Types of Vehicles:
+### Recognition and translation of text:
 <p align="center">
    <video src="https://user-images.githubusercontent.com/41968942/162639093-34b066e6-fc49-47a5-9bd0-f5b1aeddf53a.mp4" | width=300>
 </p>
