@@ -25,17 +25,16 @@ def char_list_from_file() -> List[str]:
         return list(f.read())
 
 
-def infer(model: Model, fn_img: Path, type_of_model) -> None:
+def infer(model: Model, fn_img: Path) -> None:
     """Recognizes text in image provided by file path."""
     img = cv2.imread(fn_img, cv2.IMREAD_GRAYSCALE)
     assert img is not None
 
-    preprocessor = Preprocessor(type_of_model, get_img_size(), dynamic_width=True, padding=16)
+    preprocessor = Preprocessor(get_img_size(), dynamic_width=True, padding=16)
     img = preprocessor.process_img(img)
     
 
-    batch = Batch([img], None, 1)
-    print(batch)
+    batch = Batch([img], None, 1) # Batch(imgs, gt_texts, batch_size)
     recognized, probability = model.infer_batch(batch, True)
     print(f'Recognized: "{recognized[0]}"')
     print(f'Probability: {probability[0]}')

@@ -24,8 +24,7 @@ class Model:
     """Minimalistic Tensorflow model for Handwritten Text Recognition."""
 
     def __init__(self,
-                 type_of_model,
-                 char_list: List[str],
+                 char_list: List[str], #The list of characters that are recognised by the model.
                  decoder_type: str = DecoderType.BestPath,
                  must_restore: bool = False,
                  dump: bool = False):
@@ -38,9 +37,9 @@ class Model:
         self.must_restore = must_restore
         self.snap_ID = 0
 
-        # Whether to use normalization over a batch or a population
+         # Whether to use normalization over a batch or a population
         self.is_train = tf.compat.v1.placeholder(tf.bool, name='is_train')
-
+        
         # input image batch
         self.input_imgs = tf.compat.v1.placeholder(tf.float32, shape=(None, None, None))
 
@@ -49,25 +48,18 @@ class Model:
         self.setup_rnn()
         self.setup_ctc()
 
-        # setup optimizer to train NN
-        self.batches_trained = 0
-        self.update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(self.update_ops):
-            self.optimizer = tf.compat.v1.train.AdamOptimizer().minimize(self.loss)
-
         # initialize TF
-        self.sess, self.saver = self.setup_tf(type_of_model)
+        self.sess, self.saver = self.setup_tf()
 
     def setup_cnn(self) -> None:
         """Create CNN layers. ReLU activation function."""
         cnn_in4d = tf.expand_dims(input=self.input_imgs, axis=3)
 
         # list of parameters for the layers
-        kernel_vals = [5, 5, 3, 3, 3] # 2 layers of 5X5 and 3 layers of 2X2.
+        kernel_vals = [5, 5, 3, 3, 3] # 2 layers of 5X5 and 3 layers of 3X3.
         feature_vals = [1, 32, 64, 128, 128, 256] 
         stride_vals = pool_vals = [(2, 2), (2, 2), (1, 2), (1, 2), (1, 2)]
         num_layers = len(stride_vals)
-
         # create layers
         pool = cnn_in4d  # input to first CNN layer
         for i in range(num_layers):
@@ -85,7 +77,6 @@ class Model:
     def setup_rnn(self) -> None:
         """Create RNN layers."""
         rnn_in3d = tf.squeeze(self.cnn_out_4d, axis=[2])
-
         # basic cells which is used to build RNN
         num_hidden = 256
         cells = [tf.compat.v1.nn.rnn_cell.LSTMCell(num_units=num_hidden, state_is_tuple=True) for _ in
@@ -109,7 +100,6 @@ class Model:
 
     def setup_ctc(self):
         """CTC function for loss and decoder."""
-
         self.ctc_in_3d_tbc = tf.transpose(a=self.rnn_out_3d, perm=[1, 0, 2])
         # ground truth text as sparse tensor
         self.gt_texts = tf.SparseTensor(tf.compat.v1.placeholder(tf.int64, shape=[None, 2]),
@@ -137,26 +127,16 @@ class Model:
                                                          beam_width=50)
         
 
-    def setup_tf(self, type_of_model) -> Tuple[tf.compat.v1.Session, tf.compat.v1.train.Saver]:
+    def setup_tf(self) -> Tuple[tf.compat.v1.Session, tf.compat.v1.train.Saver]:
         """Initialize Tensorflow."""
         print('Python: ' + sys.version)
         print('Tensorflow: ' + tf.__version__)
 
         sess = tf.compat.v1.Session()  # TF session
-
         saver = tf.compat.v1.train.Saver(max_to_keep=1)  # saver saves model to file
-        if type_of_model == 0:
-            model_dir = '../model/word/'
-        elif type_of_model == 1:
-            model_dir = '../model/line/'
-        else:
-            raise Exception("wrong model choice.")
-        
+            
+        model_dir = '../model/line/'
         latest_snapshot = tf.train.latest_checkpoint(model_dir)  # to check for an existing model.
-
-        # if model must be restored, there must be a snapshot/existing file
-        if self.must_restore and not latest_snapshot:
-            raise Exception('No saved model found in: ' + model_dir)
 
         # if a saved model if available for use.
         if latest_snapshot:
@@ -171,6 +151,7 @@ class Model:
     
     def to_sparse(self, texts: List[str]) -> Tuple[List[List[int]], List[int], List[int]]:
         """Getting the ground truth texts into the sparse tensor for ctc_loss."""
+   
         indices = []
         values = []
         shape = [len(texts), 0]  # last entry must be max(labelList[i])
@@ -190,8 +171,7 @@ class Model:
 
     def decoder_output_to_text(self, ctc_output: tuple, batch_size: int) -> List[str]:
         """Extract texts from output of CTC decoder."""
-
-        
+       
         # Tensoflow decoders: label strings are contained in sparse tensor
         # ctc returns tuple, first element is SparseTensor
         decoded = ctc_output[0][0]
@@ -208,21 +188,9 @@ class Model:
         # map labels to chars for all batch elements
         return [''.join([self.char_list[c] for c in labelStr]) for labelStr in label_strs]
 
-    def train_batch(self, batch: Batch) -> float:
-        """Feed a batch into the NN to train it."""
-        num_batch_elements = len(batch.imgs)
-        max_text_len = batch.imgs[0].shape[0] // 4
-        sparse = self.to_sparse(batch.gt_texts)
-        eval_list = [self.optimizer, self.loss]
-        feed_dict = {self.input_imgs: batch.imgs, self.gt_texts: sparse,
-                     self.seq_len: [max_text_len] * num_batch_elements, self.is_train: True}
-        _, loss_val = self.sess.run(eval_list, feed_dict)
-        self.batches_trained += 1
-        return loss_val
-
     def infer_batch(self, batch: Batch, calc_probability: bool = False, probability_of_gt: bool = False):
         """Feed a batch into the NN to recognize the texts."""
-
+      
         # decode, optionally save RNN output
         num_batch_elements = len(batch.imgs)
 
@@ -261,12 +229,3 @@ class Model:
             probs = np.exp(-loss_vals)
 
         return texts, probs
-
-    #To save the model
-    def save(self, type_of_model) -> None:
-        """Save model to file."""
-        self.snap_ID += 1
-        if type_of_model: #To make different folders for different models.
-            self.saver.save(self.sess, '../model/line/snapshot', global_step=self.snap_ID)
-        else:
-            self.saver.save(self.sess, '../model/word/snapshot', global_step=self.snap_ID)

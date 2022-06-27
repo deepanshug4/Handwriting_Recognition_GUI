@@ -7,10 +7,9 @@ from deep_translator import GoogleTranslator # the open source translation libra
 
 import testing_code as test # file having the infer function used to test
 
-model_type = 1 # for line model
 decoder_type = 1 # for beam search
 # loading the line model beforehand to decrease the run time
-model_line_beam = test.Model(model_type, test.char_list_from_file(), decoder_type, must_restore=True) 
+model_line_beam = test.Model(test.char_list_from_file(), decoder_type, must_restore=True) 
 
 root = tk.Tk()
 root.geometry('500x600') # The size of tkinter window
@@ -27,7 +26,8 @@ def get_language(text): # to get translations in different languages
     frame_trans_text.pack()
 
     to_translate = text
-    translated = GoogleTranslator(source='auto', target=lang.get()).translate(to_translate) # function to get the translated text
+    translated = GoogleTranslator(source='auto', 
+                target=lang.get()).translate(to_translate) # function to get the translated text
     
     ttk.Label(frame_trans_text, 
 			  text = "Translated Text: ", 
@@ -41,11 +41,10 @@ def get_language(text): # to get translations in different languages
     try_again_btn.pack(ipadx=10, ipady=10, pady=5)
 
 
-
 def open_file():
     file = askopenfile(filetypes =[('Image Files', '')]) # open the text file
     img = file.name
-    predicted_text, probability = test.infer(model_line_beam, img, type_of_model=model_type) #infer function
+    predicted_text, probability = test.infer(model_line_beam, img) #infer method
     
     frame_root = ttk.Frame(root) # primary frame
     frame_root.pack() 

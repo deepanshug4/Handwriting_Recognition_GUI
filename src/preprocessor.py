@@ -1,15 +1,11 @@
 import random
 from typing import Tuple
-
 import cv2
 import numpy as np
-
 from dataloader_iam import Batch
-
 
 class Preprocessor:
     def __init__(self,
-                 model_mode,
                  img_size: Tuple[int, int],
                  padding: int = 0,
                  dynamic_width: bool = False,
@@ -23,7 +19,7 @@ class Preprocessor:
         self.padding = padding
         self.dynamic_width = dynamic_width
         self.data_augmentation = data_augmentation
-        self.model_mode = model_mode
+        
 
     @staticmethod
     def _truncate_label(text: str, max_text_len: int) -> str:
@@ -168,8 +164,8 @@ class Preprocessor:
         return img
 
     def process_batch(self, batch: Batch) -> Batch:
-        if self.model_mode:
-            batch = self._simulate_text_line(batch)
+        
+        batch = self._simulate_text_line(batch)
 
         res_imgs = [self.process_img(img) for img in batch.imgs]
         max_text_len = res_imgs[0].shape[0] // 4
