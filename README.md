@@ -26,10 +26,11 @@ The use of CTC makes the model more receptive to differnt writing styles like it
 - [Installation](#Installation)
 - [Usage](#usage)
   - [Main.py](#main)
-  - [Model.py](#model)
+  - [Model_testing.py](#model_test)
+  - [Model_training.py](#model_train)
   - [Preprocessor.py](#preprocess)
   - [Testing_code.py](#test)
-  - [Training_model_code.py](#train)
+  - [Training_code.py](#train)
   - [Create_lmdb.py](#lmdb)
   - [Dataloader_iam.py](#dataset)
 - [Bug Reporting](#bug)
@@ -43,9 +44,10 @@ The use of CTC makes the model more receptive to differnt writing styles like it
 
 - Zero dependencies
 - Use of CTC algorithms to improve the quality of recognition without using <a href="https://github.com/githubharald/DeslantImg">De-slanting</a> algorithms
-- Recognition of handwritten text on words (v.0.0.1)
-- Recognition of handwritten text on lines (v.0.0.2)
-- Implementation of Translation Module on Recognised Text (v.0.0.3) (Latest)
+- ~~Recognition of handwritten text on words~~ (v.0.0.1)
+- ~~Recognition of handwritten text on lines~~ (v.0.0.2)
+- ~~Implementation of Translation Module on Recognised Text~~ (v.0.0.3) 
+- Removal of the old word model and it's dependencies along with modularization of the model file (v.0.0.4) (Latest)
 - Implementation of different CTC decoders like 1) Best Fit 2) Beam Search 3) Word Search (upcoming)   
 - [Request more features](#feature-request)...
 
@@ -77,15 +79,14 @@ pip install -r requirements.txt
 ### 1) Main.py
 *This file contains the code for Tkinter GUI which is used to test or predict the text along with translation of the recognised text. This takes images of handwritten text as input and predicts the text contained in it.*
 ```
-    model_type = 1 # for line model
     decoder_type = 1 # for beam search
     # loading the line model beforehand to decrease the run time
-    model_line_beam = test.Model(model_type, test.char_list_from_file(), decoder_type, must_restore=True) 
+    model_line_beam = test.Model(test.char_list_from_file(), decoder_type, must_restore=True) 
     
     def open_file():
     file = askopenfile(filetypes =[('Image Files', '')]) # open the text file
     img = file.name
-    predicted_text, probability = test.infer(model_line_beam, img, type_of_model=model_type) #infer function
+    predicted_text, probability = test.infer(model_line_beam, img) #infer function
     ...
 ```
     
@@ -104,8 +105,8 @@ pip install -r requirements.txt
         ...
 ```
     
-<a id="model"></a>                           
-### 2) Model.py
+<a id="model_test"></a>                           
+### 2) Model_testing.py
 *This file contains the structure of the model that is used in this project. The model used in this project has 3 different components.*
 <ul>
 <li> CNN
@@ -152,16 +153,9 @@ pip install -r requirements.txt
 ```
     
 </ul
-    
-*Along with these there is a train function to train the model with specific changes like the decoder type and type of model: 1) The old word model. 2) The newly proposed line model (works on both words and line). This train function can be called from the functions given in <a href="https://github.com/deepanshug4/Handwriting_Recognition_GUI/blob/main/src/training_model_code.py">training_model_code.py</a>*
+ 
 
-```
-   def train_batch(self, batch: Batch) -> float:
-        """Feed a batch into the NN to train it."""
-        num_batch_elements = len(batch.imgs)
-```
-    
-*The infer method in the models file is the method to test the model on any input. It uses the stored model checkpoints to build the complete model depending upon the selected decoder. This has options to load the checkpoints of the word and line model as per the user's needs. This function can be called from <a href="https://github.com/deepanshug4/Handwriting_Recognition_GUI/blob/main/src/testing_code.py">testing_code.py</a>*
+*The infer method in the models file is the method to test the model on any input. It uses the stored model checkpoints to build the complete model depending upon the selected decoder. This has options to load the checkpoints for the line model as per the user's needs. This function can be called from <a href="https://github.com/deepanshug4/Handwriting_Recognition_GUI/blob/main/src/testing_code.py">testing_code.py</a>*
     
 ```
     def infer_batch(self, batch: Batch, calc_probability: bool = False, probability_of_gt: bool = False):
@@ -170,21 +164,25 @@ pip install -r requirements.txt
         # decode, optionally save RNN output
         num_batch_elements = len(batch.imgs)
 ```
-    
+
+<a id="model_train"></a>                           
+### 3) Model_training.py
+*This file contains the structure of the model and the methods which are needed to train the models.*
+
 <a id="preprocess"></a>                           
-### 3) Preprocessor.py
+### 4) Preprocessor.py
 *This file handles the preprocessing that needs to be done. It downsizes the inputs to either a width of 128 or height of 32 for word images and width of 256 or height of 32 for line images (without affecting it's quality).* 
               
 <a id="test"></a>                           
-### 4) testing_code.py
+### 5) Testing_code.py
 *This file contains the "infer" method which is used to initialize the testing or prediction of text. This method has attributes for the type of model to be selected and the type of decoder to be used.*
   
 <a id="train"></a>                           
-### 5) Training_model_code.py
+### 6) Training_code.py
 *This file contains all the methods which are needed to build the model. This can be invoked using a command line argument and arguments.* 
   
 <a id="lmdb"></a>                           
-### 6) Create_lmdb.py
+### 7) Create_lmdb.py
 *This file initializes the Lighting Memory Mapped Database (lmdb) which is used to store the images in a tree format.*
   
 <a id="dataset"></a>                           
