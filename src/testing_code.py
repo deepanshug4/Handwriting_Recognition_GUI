@@ -4,7 +4,7 @@ import cv2
 from path import Path #This is used to specify the path for the files.
 
 from dataloader_iam import Batch 
-from model import Model, DecoderType 
+from model_testing import Model, DecoderType 
 from preprocessor import Preprocessor
 
 
