@@ -4,7 +4,7 @@
 </p>
 
 <p>
-This project is a part of my Research work titled "Text Recognition from Handwritten Text using CRNN Models, Connectionist Temporal Classification (CTC)". This handwriting detection system uses TensorFlow and a combination of Convolutional Recurrent Neural Network (CRNN) along with Connectionist Temporal Classification (CTC) algorithms to train the RNN model. The RNN used in this project is Long Short Term Memory (LSTM) which is a type of RNN used specifically for image recognition. During the research, the efficiency of CRNN models was found to be much better than the existing methods like Hidden Markov Models and Multi layer Perceptrons. In this project, I havce proposed a model which performs better than it's predecessors.
+This project is a part of my Research work titled "Text Recognition from Handwritten Text using CRNN Models, Connectionist Temporal Classification (CTC)". This handwriting detection system uses TensorFlow and a combination of Convolutional Recurrent Neural Network (CRNN) along with Connectionist Temporal Classification (CTC) algorithms to train the RNN model. The RNN used in this project is Long Short Term Memory (LSTM) which is a type of RNN used specifically for image recognition. During the research, the efficiency of CRNN models was found to be much better than the existing methods like Hidden Markov Models and Multi layer Perceptrons. In this project, I have proposed a model which performs better than its predecessors.
 
 The effectiveness of the use of CTC for handwritten text recognition has been proven by Harald Scheidl in his thesis on "Handwritten Text Recognition in Historial documents." https://repositum.tuwien.at/retrieve/10807 
 
